@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: thorntail-messaging-work-queue-worker
+  annotations:
+    iconClass: icon-jboss
+    tags: wildfly-swarm, java, microservice, messaging
+    template.openshift.io/provider-display-name: "Red Hat, Inc."
+    template.openshift.io/documentation-url: "https://launcher.fabric8.io/docs/thorntail-runtime.html"
+    description: The Messaging Work Queue example demonstrates scalable task processing using messaging.
+parameters:
+- name: SOURCE_REPOSITORY_URL
+  description: The source URL for the application
+  displayName: Source URL
+  value: https://github.com/thorntail-examples/messaging-work-queue-redhat.git
+  required: true
+- name: SOURCE_REPOSITORY_REF
+  description: The branch name for the application
+  displayName: Source Branch
+  value: master
+  required: true
+- name: SOURCE_REPOSITORY_DIR
+  description: The location within the source repo of the application
+  displayName: Source Directory
+  value: worker
+  required: true
+- name: GITHUB_WEBHOOK_SECRET
+  description: A secret string used to configure the GitHub webhook
+  displayName: GitHub Webhook Secret
+  required: true
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+- name: MAVEN_MIRROR_URL
+  description: URL of a Maven repository that will be used during build phase as a global Maven mirror
+  displayName: Maven Mirror URL
+  required: false
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: thorntail-messaging-work-queue-worker
+  spec: {}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: runtime-thorntail-messaging-work-queue-worker
+  spec:
+    tags:
+    - name: latest
+      from:
+        kind: DockerImage
+        name: registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: thorntail-messaging-work-queue-worker
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: thorntail-messaging-work-queue-worker:latest
+    postCommit: {}
+    resources: {}
+    source:
+      git:
+        uri: ${SOURCE_REPOSITORY_URL}
+        ref: ${SOURCE_REPOSITORY_REF}
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: runtime-thorntail-messaging-work-queue-worker:latest
+        incremental: true
+        env:
+        - name: MAVEN_ARGS_APPEND
+          value: "-pl ${SOURCE_REPOSITORY_DIR}"
+        - name: MAVEN_MIRROR_URL
+          value: "${MAVEN_MIRROR_URL}"
+        - name: ARTIFACT_DIR
+          value: "${SOURCE_REPOSITORY_DIR}/target"
+        - name: ARTIFACT_COPY_ARGS
+          value: "*-thorntail.jar"
+      type: Source
+    triggers:
+    - github:
+        secret: ${GITHUB_WEBHOOK_SECRET}
+      type: GitHub
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: thorntail-messaging-work-queue-worker
+    name: thorntail-messaging-work-queue-worker
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+      app: thorntail-messaging-work-queue-worker
+      group: io.thorntail.example
+    strategy:
+      rollingParams:
+        timeoutSeconds: 3600
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: thorntail-messaging-work-queue-worker
+          group: io.thorntail.example
+      spec:
+        containers:
+        - env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MESSAGING_SERVICE_HOST
+            value: amq-broker-amqp
+          - name: MESSAGING_SERVICE_PORT
+            value: "5672"
+          - name: GC_MAX_METASPACE_SIZE
+            value: "200"
+          image: thorntail-messaging-work-queue-worker:latest
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 180
+          name: thorntail-messaging-work-queue-worker
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          - containerPort: 9779
+            name: prometheus
+            protocol: TCP
+          - containerPort: 8778
+            name: jolokia
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+          securityContext:
+            privileged: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - thorntail-messaging-work-queue-worker
+        from:
+          kind: ImageStreamTag
+          name: thorntail-messaging-work-queue-worker:latest
+      type: ImageChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: thorntail-messaging-work-queue-worker
+      group: io.thorntail.example
+    name: thorntail-messaging-work-queue-worker
+  spec:
+    ports:
+    - name: http
+      port: 8080
+    selector:
+      app: thorntail-messaging-work-queue-worker
+      group: io.thorntail.example
