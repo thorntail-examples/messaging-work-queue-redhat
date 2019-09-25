@@ -75,14 +75,6 @@
             <configuration>
               <!-- the 'worker' app doesn't expose public endpoints -->
               <generateRoute>false</generateRoute>
-              <generator>
-                <includes>
-                  <include>thorntail-v2</include>
-                </includes>
-                <excludes>
-                  <exclude>webapp</exclude>
-                </excludes>
-              </generator>
             </configuration>
           </plugin>
         </plugins>
