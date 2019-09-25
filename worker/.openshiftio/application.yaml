@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
   name: thorntail-messaging-work-queue-worker
@@ -35,12 +35,12 @@ parameters:
   displayName: Maven Mirror URL
   required: false
 objects:
-- apiVersion: v1
+- apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
     name: thorntail-messaging-work-queue-worker
   spec: {}
-- apiVersion: v1
+- apiVersion: image.openshift.io/v1
   kind: ImageStream
   metadata:
     name: runtime-thorntail-messaging-work-queue-worker
@@ -50,7 +50,7 @@ objects:
       from:
         kind: DockerImage
         name: registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift
-- apiVersion: v1
+- apiVersion: build.openshift.io/v1
   kind: BuildConfig
   metadata:
     name: thorntail-messaging-work-queue-worker
@@ -91,7 +91,7 @@ objects:
       type: ImageChange
   status:
     lastVersion: 0
-- apiVersion: v1
+- apiVersion: apps.openshift.io/v1
   kind: DeploymentConfig
   metadata:
     labels:
