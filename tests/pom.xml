@@ -32,13 +32,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.thorntail.example</groupId>
+      <groupId>${project.groupId}</groupId>
       <artifactId>thorntail-messaging-work-queue-frontend</artifactId>
       <version>${project.version}</version>
       <classifier>classes</classifier>
     </dependency>
     <dependency>
-      <groupId>io.thorntail.example</groupId>
+      <groupId>${project.groupId}</groupId>
       <artifactId>thorntail-messaging-work-queue-worker</artifactId>
       <version>${project.version}</version>
     </dependency>
