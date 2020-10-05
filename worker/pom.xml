@@ -61,8 +61,8 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>io.fabric8</groupId>
-            <artifactId>fabric8-maven-plugin</artifactId>
+            <groupId>org.eclipse.jkube</groupId>
+            <artifactId>openshift-maven-plugin</artifactId>
             <executions>
               <execution>
                 <goals>
@@ -73,7 +73,13 @@
             </executions>
             <configuration>
               <!-- the 'worker' app doesn't expose public endpoints -->
-              <generateRoute>false</generateRoute>
+              <enricher>
+                <config>
+                  <jkube-openshift-route>
+                    <generateRoute>false</generateRoute>
+                  </jkube-openshift-route>
+                </config>
+              </enricher>
             </configuration>
           </plugin>
         </plugins>

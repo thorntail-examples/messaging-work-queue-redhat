@@ -32,12 +32,12 @@ oc apply -f ./worker/.openshiftio/application.yaml
 oc new-app --template=thorntail-messaging-work-queue-worker
 ```
 
-### Deployment with the Fabric8 Maven Plugin
+### Deployment with the JKube Maven Plugin
 
 ```bash
 oc apply -f ./frontend/.openshiftio/service.amq.yaml
 
-mvn clean fabric8:deploy -Popenshift
+mvn clean oc:deploy -Popenshift
 ```
 
 ## Test everything
