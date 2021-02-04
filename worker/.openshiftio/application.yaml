@@ -128,11 +128,13 @@ objects:
           image: thorntail-messaging-work-queue-worker:latest
           imagePullPolicy: IfNotPresent
           livenessProbe:
+            failureThreshold: 3
             httpGet:
-              path: /health
+              path: /api/health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 180
+            successThreshold: 1
           name: thorntail-messaging-work-queue-worker
           ports:
           - containerPort: 8080
@@ -145,11 +147,13 @@ objects:
             name: jolokia
             protocol: TCP
           readinessProbe:
+            failureThreshold: 3
             httpGet:
-              path: /health
+              path: /api/health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 10
+            successThreshold: 1
           securityContext:
             privileged: false
     triggers:

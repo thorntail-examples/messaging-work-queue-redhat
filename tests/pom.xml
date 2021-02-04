@@ -41,6 +41,7 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>thorntail-messaging-work-queue-worker</artifactId>
       <version>${project.version}</version>
+      <classifier>classes</classifier>
     </dependency>
 
     <dependency>
