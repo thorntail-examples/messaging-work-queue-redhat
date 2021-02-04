@@ -17,40 +17,56 @@
  */
 package io.thorntail.example;
 
+import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
-import org.arquillian.cube.openshift.impl.enricher.AwaitRoute;
-import org.arquillian.cube.openshift.impl.enricher.RouteURL;
-import org.jboss.arquillian.junit.Arquillian;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import io.thorntail.openshift.test.AdditionalResources;
+import io.thorntail.openshift.test.OpenShiftTest;
+import io.thorntail.openshift.test.injection.TestResource;
+import io.thorntail.openshift.test.injection.WithName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static io.restassured.RestAssured.withArgs;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
-@RunWith(Arquillian.class)
-public class OpenShiftIT {
-    @RouteURL(value = "thorntail-messaging-work-queue-frontend")
-    @AwaitRoute(path = "/api/data") // /health returns OK too soon, we've got a resource adapter and an app to deploy
-    private String url;
+@OpenShiftTest
+@AdditionalResources("classpath:amq.yml")
+public class OpenshiftIT {
+    @TestResource
+    @WithName("thorntail-messaging-work-queue-frontend")
+    private URL url;
+
+    @BeforeEach
+    public void setUp() {
+        RestAssured.baseURI = url.toString();
+
+        // /health returns OK too soon, we've got a resource adapter and an app to deploy
+        await().atMost(5, TimeUnit.MINUTES).untilAsserted(() -> {
+            when()
+                    .get("/api/data")
+            .then()
+                    .statusCode(200);
+        });
+    }
 
     @Test
     public void shouldHandleRequest() {
         // issue a request
         String requestId =
                 given()
-                        .baseUri(url)
-                .when()
                         .body("{\"text\":\"test-message\",\"uppercase\":true,\"reverse\":true}")
                         .contentType("application/json")
+                .when()
                         .post("/api/send-request")
                 .then()
                         .statusCode(200)
@@ -60,22 +76,20 @@ public class OpenShiftIT {
         // wait for the request to be handled
         await().atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
             given()
-                    .baseUri(url)
-            .when()
                     .queryParam("request", requestId)
+            .when()
                     .get("/api/receive-response")
             .then()
                     .statusCode(200)
                     .body("requestId", equalTo(requestId))
-                    .body("workerId", not(isEmptyString()))
+                    .body("workerId", not(emptyString()))
                     .body("text", equalTo("EGASSEM-TSET"));
         });
 
         JsonPath responseJson =
                 given()
-                        .baseUri(url)
-                .when()
                         .queryParam("request", requestId)
+                .when()
                         .get("/api/receive-response")
                 .thenReturn()
                         .jsonPath();
@@ -85,9 +99,7 @@ public class OpenShiftIT {
 
         // verify data
         await().atMost(60, TimeUnit.SECONDS).untilAsserted(() -> {
-            given()
-                    .baseUri(url)
-            .when()
+            when()
                     .get("/api/data")
             .then()
                     .statusCode(200)
