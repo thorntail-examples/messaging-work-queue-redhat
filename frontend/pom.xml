@@ -88,5 +88,32 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>openshift-it</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.jkube</groupId>
+            <artifactId>openshift-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>resource</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <enricher>
+                <config>
+                  <jkube-healthcheck-thorntail-v2>
+                    <path>/</path>
+                  </jkube-healthcheck-thorntail-v2>
+                </config>
+              </enricher>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
